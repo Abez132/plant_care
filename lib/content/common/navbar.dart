@@ -23,10 +23,10 @@ class Navbar extends StatelessWidget {
               icon: Icon(Icons.tips_and_updates_outlined),
               label: "Home",
             ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline_outlined),
-              label: "Login",
-            ),
+            // NavigationDestination(
+            //   icon: Icon(Icons.person_outline_outlined),
+            //   label: "Login",
+            // ),
           ],
           onDestinationSelected: (int value) {
             indexNotifier.value = value;

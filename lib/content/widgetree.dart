@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:plant_care/content/common/navbar.dart';
 import 'package:plant_care/content/page/home.dart';
 import 'package:plant_care/content/page/picture.dart';
-import 'package:plant_care/content/page/profile.dart';
+// import 'package:plant_care/content/page/profile.dart';
 import 'package:plant_care/content/page/tips.dart';
 import 'package:plant_care/notifier/value.dart';
 
-List<Widget> pages = [Home(), Picture(), Tips(), Profile()];
+List<Widget> pages = [Home(), Picture(), Tips()];
 
 class WidgetTree extends StatelessWidget {
   const WidgetTree({super.key});
