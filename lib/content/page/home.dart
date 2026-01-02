@@ -21,10 +21,7 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Plant Care'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text('Plant Care'), centerTitle: true),
       body: SafeArea(
         child: Center(
           child: Padding(

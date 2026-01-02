@@ -1,0 +1,90 @@
+{
+  "project_info": {
+    "project_number": "52583662520",
+    "project_id": "mmmm-7e4ba",
+    "storage_bucket": "mmmm-7e4ba.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:52583662520:android:89ee8d00d7e9420669c54d",
+        "android_client_info": {
+          "package_name": "com.example.facebookv2"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "52583662520-1bojo15jp28chj76t3jeai1n3heomjt8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.facebookv2",
+            "certificate_hash": "ed1d47fa4af236f9b4067ce08303cb626c765a3d"
+          }
+        },
+        {
+          "client_id": "52583662520-v6fgrh82q5d7o5nk1tpk6f0e7ndfbt68.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDJXJvP6n4BsTbWUzNGwgpQ6M3oK7pK7k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "52583662520-lr7khl2duo7fgteh691hdq9hd769sfap.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "52583662520-ei4801eint6b0paa2fcnai899vr6m39r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.facebookv2"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:52583662520:android:088b7bd944822d8469c54d",
+        "android_client_info": {
+          "package_name": "com.example.plant_care"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "52583662520-v6fgrh82q5d7o5nk1tpk6f0e7ndfbt68.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDJXJvP6n4BsTbWUzNGwgpQ6M3oK7pK7k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "52583662520-lr7khl2duo7fgteh691hdq9hd769sfap.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "52583662520-ei4801eint6b0paa2fcnai899vr6m39r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.facebookv2"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

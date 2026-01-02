@@ -10,24 +10,30 @@ class Navbar extends StatelessWidget {
       valueListenable: indexNotifier,
       builder: (context, value, child) {
         return NavigationBar(
-          destinations: [
+          height: 70,
+          backgroundColor: Colors.white.withOpacity(0.95),
+          indicatorColor: const Color(0xFF9ED9A3),
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          animationDuration: const Duration(milliseconds: 300),
+
+          destinations: const [
             NavigationDestination(
               icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home_rounded),
               label: "Home",
             ),
             NavigationDestination(
               icon: Icon(Icons.camera_alt_outlined),
-              label: "pics",
+              selectedIcon: Icon(Icons.camera_alt_rounded),
+              label: "Scan",
             ),
             NavigationDestination(
               icon: Icon(Icons.tips_and_updates_outlined),
-              label: "Home",
+              selectedIcon: Icon(Icons.tips_and_updates_rounded),
+              label: "Tips",
             ),
-            // NavigationDestination(
-            //   icon: Icon(Icons.person_outline_outlined),
-            //   label: "Login",
-            // ),
           ],
+
           onDestinationSelected: (int value) {
             indexNotifier.value = value;
           },

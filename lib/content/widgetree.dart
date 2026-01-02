@@ -13,22 +13,16 @@ class WidgetTree extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5),
-      bottomNavigationBar: Navbar(),
-      body: ValueListenableBuilder(
-        valueListenable: indexNotifier,
-        builder: (context, value, child) {
-          return pages.elementAt(value);
-        },
-      ),
-
-      // ValueListenableBuilder(
-      //   valueListenable: indexNotifier,
-      //   builder: (context, value, child) {
-      //     return pages.elementAt(indexNotifier.value);
-      //   },
-      // ),
+    return ValueListenableBuilder(
+      valueListenable: indexNotifier,
+      builder: (context, value, child) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFF0F2F5),
+          // Hide nav bar on Picture tab (index 1) while keeping it for others.
+          bottomNavigationBar: value == 1 ? null : const Navbar(),
+          body: pages.elementAt(value),
+        );
+      },
     );
   }
 }
