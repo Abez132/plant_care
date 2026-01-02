@@ -25,7 +25,7 @@ class Navbar extends StatelessWidget {
             NavigationDestination(
               icon: Icon(Icons.camera_alt_outlined),
               selectedIcon: Icon(Icons.camera_alt_rounded),
-              label: "Scan",
+              label: "Identify",
             ),
             NavigationDestination(
               icon: Icon(Icons.tips_and_updates_outlined),

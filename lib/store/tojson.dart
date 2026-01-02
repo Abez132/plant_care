@@ -58,6 +58,17 @@ Future<File> savePlantToJson({
   return file.writeAsString(jsonEncode(plants));
 }
 
+Future<void> deletePlantByCreatedAt(String createdAtIso) async {
+  final dir = await _safeDocumentsDirectory();
+  final file = File('${dir.path}/plants.json');
+  if (!await file.exists()) return;
+  final content = await file.readAsString();
+  if (content.isEmpty) return;
+  final data = jsonDecode(content) as List;
+  data.removeWhere((e) => e['createdAt'] == createdAtIso);
+  await file.writeAsString(jsonEncode(data));
+}
+
 Future<List<PlantEntry>> loadPlantsFromJson() async {
   final dir = await _safeDocumentsDirectory();
   final file = File('${dir.path}/plants.json');

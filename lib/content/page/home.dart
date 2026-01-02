@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:plant_care/content/common/build_form.dart';
 import 'package:plant_care/content/common/personal_plant_card.dart';
+import 'package:plant_care/content/page/login.dart';
 import 'package:plant_care/store/tojson.dart';
 
 class Home extends StatefulWidget {
@@ -31,7 +32,21 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Plant Care'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('Plant Care'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+              );
+            },
+            icon: Icon(Icons.person_pin),
+          ),
+        ],
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _refreshPlants,
@@ -58,6 +73,12 @@ class _HomeState extends State<Home> {
                     watering: plant.watering,
                     imagePath: plant.imagePath,
                     createdAt: plant.createdAt,
+                    onDelete: () async {
+                      await deletePlantByCreatedAt(
+                        plant.createdAt.toIso8601String(),
+                      );
+                      await _refreshPlants();
+                    },
                   );
                 },
               );
