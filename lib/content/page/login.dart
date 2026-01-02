@@ -18,7 +18,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
-  Color get _brand => const Color(0xFF1877F2);
+  Color get _brand => const Color.fromARGB(255, 0, 151, 13);
 
   void valide() async {
     try {
@@ -52,10 +52,10 @@ class _LoginPageState extends State<LoginPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.facebook, color: _brand, size: 44),
+                    Icon(Icons.energy_savings_leaf, color: _brand, size: 44),
                     const SizedBox(width: 8),
                     Text(
-                      'facebook',
+                      'Plant Care',
                       style: TextStyle(
                         color: _brand,
                         fontSize: 32,
@@ -86,7 +86,7 @@ class _LoginPageState extends State<LoginPage> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            'Log in to Facebook',
+                            'Log in',
                             style: TextStyle(
                               color: Colors.grey.shade800,
                               fontSize: 18,
