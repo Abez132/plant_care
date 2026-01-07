@@ -6,35 +6,49 @@ import 'package:path_provider/path_provider.dart';
 class PlantEntry {
   PlantEntry({
     required this.name,
-    required this.watering,
+    required this.wateringFrequency,
+    required this.wateringSchedule,
     required this.imagePath,
     required this.createdAt,
+    this.plantId,
   });
 
   final String name;
-  final String watering;
+  final int wateringFrequency;
+  final List<String> wateringSchedule;
   final String imagePath;
   final DateTime createdAt;
+  final String? plantId; // For notification management
 
   Map<String, dynamic> toJson() => {
     'name': name,
-    'watering': watering,
+    'wateringFrequency': wateringFrequency,
+    'wateringSchedule': wateringSchedule,
     'imagePath': imagePath,
     'createdAt': createdAt.toIso8601String(),
+    'plantId': plantId,
   };
 
   factory PlantEntry.fromJson(Map<String, dynamic> json) => PlantEntry(
     name: json['name'] as String,
-    watering: json['watering'] as String,
+    wateringFrequency:
+        json['wateringFrequency'] as int? ??
+        1, // Default to once daily for old entries
+    wateringSchedule: json['wateringSchedule'] != null
+        ? List<String>.from(json['wateringSchedule'] as List)
+        : ['12:00 PM'], // Default schedule for old entries
     imagePath: json['imagePath'] as String,
     createdAt: DateTime.parse(json['createdAt'] as String),
+    plantId: json['plantId'] as String?,
   );
 }
 
 Future<File> savePlantToJson({
   required String name,
-  required String watering,
+  required int wateringFrequency,
+  required List<String> wateringSchedule,
   required File imageFile,
+  String? plantId,
 }) async {
   final dir = await _safeDocumentsDirectory();
   final file = File('${dir.path}/plants.json');
@@ -49,9 +63,11 @@ Future<File> savePlantToJson({
   // Append new entry
   plants.add({
     'name': name,
-    'watering': watering,
+    'wateringFrequency': wateringFrequency,
+    'wateringSchedule': wateringSchedule,
     'imagePath': imageFile.path, // store path; you can copy file if needed
     'createdAt': DateTime.now().toIso8601String(),
+    'plantId': plantId,
   });
 
   // Save back

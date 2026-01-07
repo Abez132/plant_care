@@ -22,8 +22,7 @@ Future<Map<String, dynamic>> identifyPlant(String base64Image) async {
     url,
     headers: {
       'Content-Type': 'application/json',
-      'Api-Key':
-          apiKey!, // replace with your key
+      'Api-Key': "M78twa8MoPYJQ5qWy6OFiZXhhMGurGJBVWGcmNrlUi3EkqXElK",
     },
     body: jsonEncode({
       'images': [base64Image],
@@ -125,14 +124,14 @@ class _PictureState extends State<Picture> with WidgetsBindingObserver {
                   borderRadius: BorderRadius.circular(22),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.12),
+                      color: Colors.white.withValues(alpha: 0.12),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
+                        color: Colors.white.withValues(alpha: 0.3),
                         width: 1.6,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.25),
+                          color: Colors.black.withValues(alpha: 0.25),
                           blurRadius: 20,
                           offset: const Offset(0, 12),
                         ),
@@ -162,7 +161,7 @@ class _PictureState extends State<Picture> with WidgetsBindingObserver {
                                     vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.4),
+                                    color: Colors.black.withValues(alpha: 0.4),
                                     borderRadius: BorderRadius.circular(14),
                                   ),
                                   child: const Text(
@@ -192,7 +191,7 @@ class _PictureState extends State<Picture> with WidgetsBindingObserver {
                     color: Colors.white,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.20),
+                        color: Colors.black.withValues(alpha: 0.20),
                         blurRadius: 18,
                         offset: const Offset(0, 10),
                       ),
@@ -237,15 +236,18 @@ class _PictureState extends State<Picture> with WidgetsBindingObserver {
                         final similarImages =
                             suggestion['similar_images'] as List;
 
-                        
-
                         Navigator.pop(context); // hide loading
 
                         // Show analysis result in a nice UI
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => PlantResultCard(uploadedImageUrl: uploadedImageUrl, plantName: plantName, probability: probability, similarImages: similarImages)
+                            builder: (_) => PlantResultCard(
+                              uploadedImageUrl: uploadedImageUrl,
+                              plantName: plantName,
+                              probability: probability,
+                              similarImages: similarImages,
+                            ),
                           ),
                         );
                       } catch (e) {
