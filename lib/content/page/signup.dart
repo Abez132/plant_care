@@ -505,9 +505,7 @@ class _SignupState extends State<Signup> {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: () {
-          // TODO: Implement Google Sign Up
-        },
+        onPressed: () {},
         icon: Container(
           padding: const EdgeInsets.all(2),
           child: Image.asset(

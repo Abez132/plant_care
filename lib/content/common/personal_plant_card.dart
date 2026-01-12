@@ -29,9 +29,7 @@ class PersonalPlantCard extends StatelessWidget {
       shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.2),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          // TODO: Navigate to plant details
-        },
+        onTap: () {},
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(

@@ -60,7 +60,6 @@ Future<File> savePlantToJson({
     if (existing.isNotEmpty) plants = jsonDecode(existing);
   }
 
-  // Append new entry
   plants.add({
     'name': name,
     'wateringFrequency': wateringFrequency,
@@ -70,7 +69,6 @@ Future<File> savePlantToJson({
     'plantId': plantId,
   });
 
-  // Save back
   return file.writeAsString(jsonEncode(plants));
 }
 
@@ -97,7 +95,6 @@ Future<List<PlantEntry>> loadPlantsFromJson() async {
       .toList();
 }
 
-// Falls back to a temporary directory if the platform channel fails.
 Future<Directory> _safeDocumentsDirectory() async {
   try {
     return await getApplicationDocumentsDirectory();

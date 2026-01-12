@@ -149,9 +149,7 @@ class _LoginPageState extends State<LoginPage> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: () {
-                  // TODO: hook up forgot password flow
-                },
+                onPressed: () {},
                 child: Text(
                   'Forgot password?',
                   style: TextStyle(
@@ -375,7 +373,7 @@ class _LoginPageState extends State<LoginPage> {
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: () {
-          // TODO: Implement Google Sign In
+
         },
         icon: Container(
           padding: const EdgeInsets.all(2),

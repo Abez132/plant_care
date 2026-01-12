@@ -6,7 +6,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:plant_care/content/page/home.dart';
 import 'package:plant_care/content/page/login.dart';
 import 'package:plant_care/notifier/value.dart';
 import '../common/plant_card.dart';
@@ -77,7 +76,6 @@ class _PicturePageState extends State<PicturePage> {
         return false;
       }
 
-      // Additional check by making a simple HTTP request
       final response = await http
           .get(Uri.parse('https://www.google.com'))
           .timeout(const Duration(seconds: 5));
@@ -142,6 +140,9 @@ class _PicturePageState extends State<PicturePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Text('Confirm Image'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -152,11 +153,11 @@ class _PicturePageState extends State<PicturePage> {
                 height: 200,
                 width: 200,
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                   child: Image.file(imageFile, fit: BoxFit.cover),
                 ),
               ),
@@ -175,6 +176,13 @@ class _PicturePageState extends State<PicturePage> {
                 });
                 _identifyPlant();
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green[700],
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               child: const Text('Identify Plant'),
             ),
           ],
@@ -188,25 +196,58 @@ class _PicturePageState extends State<PicturePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Text('Select Image Source'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Camera'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Gallery'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _pickImage(ImageSource.gallery);
-                },
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.blue[100],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.camera_alt, color: Colors.blue[700]),
+                      ),
+                      title: const Text('Camera'),
+                      subtitle: const Text('Take a new photo'),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        _pickImage(ImageSource.camera);
+                      },
+                    ),
+                    Divider(height: 1, color: Colors.grey[300]),
+                    ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.green[100],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.photo_library,
+                          color: Colors.green[700],
+                        ),
+                      ),
+                      title: const Text('Gallery'),
+                      subtitle: const Text('Choose from gallery'),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        _pickImage(ImageSource.gallery);
+                      },
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -223,20 +264,16 @@ class _PicturePageState extends State<PicturePage> {
     });
 
     try {
-      // Create request for Plant.id API v2
       final uri = Uri.parse('https://api.plant.id/v2/identify');
 
-      // Read image as base64
       final bytes = await _image!.readAsBytes();
       final base64Image = base64Encode(bytes);
 
-      // Get API key from environment variables
       final apiKey = dotenv.env['PLANT_ID_KEY'];
       if (apiKey == null || apiKey.isEmpty) {
         throw Exception('API key not found in environment variables');
       }
 
-      // Prepare request body for Plant.id API v2
       final requestBody = {
         'images': [base64Image],
         'modifiers': ['similar_images'],
@@ -256,7 +293,6 @@ class _PicturePageState extends State<PicturePage> {
         'plant_language': 'en',
       };
 
-      // Send POST request
       final response = await http.post(
         uri,
         headers: {'Content-Type': 'application/json', 'Api-Key': apiKey},
@@ -303,7 +339,6 @@ class _PicturePageState extends State<PicturePage> {
           'Plant identification failed. Status: ${response.statusCode}\nResponse: ${response.body}',
         );
       }
-
       setState(() {
         _isLoading = false;
       });
@@ -320,11 +355,27 @@ class _PicturePageState extends State<PicturePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Error'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red[600]),
+              const SizedBox(width: 8),
+              const Text('Error'),
+            ],
+          ),
           content: Text(message),
           actions: [
-            TextButton(
+            ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               child: const Text('OK'),
             ),
           ],
@@ -342,20 +393,22 @@ class _PicturePageState extends State<PicturePage> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Plant Identification'),
-        backgroundColor: Colors.green[700],
-        foregroundColor: Colors.white,
+        title: Text(
+          'Plant Identification',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
             indexNotifier.value = 0;
-
-            // Navigator.of(context).pushReplacement(
-            //   MaterialPageRoute(builder: (context) => const Home()),
-            // );
           },
           tooltip: 'Back to Home',
         ),
@@ -369,109 +422,309 @@ class _PicturePageState extends State<PicturePage> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withOpacity(0.3),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.eco, size: 48, color: Colors.white),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Discover Your Plant',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Take a photo or add one we will tell you what it is',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16, color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
             if (user == null)
-              Card(
-                color: Colors.orange[50],
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      Icon(Icons.warning, color: Colors.orange[700]),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Please log in to use plant identification',
-                          style: TextStyle(color: Colors.orange[700]),
+              Container(
+                margin: const EdgeInsets.only(bottom: 20),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.orange[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.orange[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.warning_amber,
+                        color: Colors.orange[700],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Authentication Required',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange[800],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Please log in to use plant identification',
+                            style: TextStyle(color: Colors.orange[700]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (context) => const LoginPage(),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange[600],
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(
-                              builder: (context) => const LoginPage(),
-                            ),
-                          );
-                        },
-                        child: const Text('Login'),
-                      ),
-                    ],
-                  ),
+                      child: const Text('Login'),
+                    ),
+                  ],
                 ),
               ),
 
-            const SizedBox(height: 16),
-
-            Card(
-              elevation: 4,
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(24.0),
                 child: Column(
                   children: [
                     if (_image == null) ...[
-                      Icon(Icons.camera_alt, size: 80, color: Colors.grey[400]),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Take a photo or select from gallery to identify your plant',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      Container(
+                        height: 250,
+                        width: 400,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.grey[300]!,
+                            style: BorderStyle.solid,
+                            width: 2,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: Colors.green[100],
+                                borderRadius: BorderRadius.circular(50),
+                              ),
+                              child: Icon(
+                                Icons.camera_alt,
+                                size: 48,
+                                color: Colors.green[700],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'No Image Selected',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Take a photo or select from gallery\nto identify your plant',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 24),
-                      ElevatedButton.icon(
-                        onPressed: user != null ? _showImageSourceDialog : null,
-                        icon: const Icon(Icons.add_a_photo),
-                        label: const Text('Add Photo'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green[700],
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 32,
-                            vertical: 16,
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton.icon(
+                          onPressed: user != null
+                              ? _showImageSourceDialog
+                              : null,
+                          icon: const Icon(Icons.add_a_photo, size: 24),
+                          label: const Text(
+                            'Add Photo',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primaryContainer,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 2,
                           ),
                         ),
                       ),
                     ] else ...[
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.file(
-                          _image!,
-                          height: 300,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
+                      // Image Preview
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.file(
+                            _image!,
+                            height: 300,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
+
                       if (_isLoading) ...[
-                        const CircularProgressIndicator(),
-                        const SizedBox(height: 16),
-                        const Text('Identifying plant...'),
-                      ],
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: _showImageSourceDialog,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('New Photo'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue[700],
-                              foregroundColor: Colors.white,
-                            ),
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          if (!_isLoading)
-                            ElevatedButton.icon(
-                              onPressed: _identifyPlant,
-                              icon: const Icon(Icons.search),
-                              label: const Text('Identify'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green[700],
-                                foregroundColor: Colors.white,
+                          child: Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue[100],
+                                  borderRadius: BorderRadius.circular(50),
+                                ),
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.blue[700]!,
+                                  ),
+                                  strokeWidth: 3,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Analyzing your plant...',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.blue[700],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'This may take a few seconds',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.blue[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 20),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 50,
+                              child: OutlinedButton.icon(
+                                onPressed: _showImageSourceDialog,
+                                icon: const Icon(Icons.refresh, size: 20),
+                                label: const Text('New Photo'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.blue[700],
+                                  side: BorderSide(color: Colors.blue[300]!),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
                               ),
                             ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: SizedBox(
+                              height: 50,
+                              child: ElevatedButton.icon(
+                                onPressed: !_isLoading ? _identifyPlant : null,
+                                icon: const Icon(Icons.search, size: 20),
+                                label: const Text('Identify Plant'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green[700],
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 2,
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -482,40 +735,100 @@ class _PicturePageState extends State<PicturePage> {
 
             const SizedBox(height: 24),
 
-            Card(
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 15,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(24.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.info_outline, color: Colors.blue[700]),
-                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[100],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.lightbulb_outline,
+                            color: Colors.blue[700],
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
                         Text(
                           'Tips for Better Results',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: Colors.blue[700],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    const Text('• Take clear, well-lit photos'),
-                    const Text(
-                      '• Include leaves, flowers, or distinctive features',
+                    const SizedBox(height: 20),
+                    _buildTipItem(
+                      Icons.wb_sunny,
+                      'Take clear, well-lit photos',
                     ),
-                    const Text('• Avoid blurry or dark images'),
-                    const Text('• Get close to the plant for detail'),
-                    const Text('• Ensure good lighting conditions'),
+                    _buildTipItem(
+                      Icons.local_florist,
+                      'Include leaves, flowers, or distinctive features',
+                    ),
+                    _buildTipItem(
+                      Icons.blur_off,
+                      'Avoid blurry or dark images',
+                    ),
+                    _buildTipItem(
+                      Icons.zoom_in,
+                      'Get close to the plant for detail',
+                    ),
+                    _buildTipItem(
+                      Icons.flash_on,
+                      'Ensure good lighting conditions',
+                    ),
                   ],
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTipItem(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.green[100],
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(icon, size: 16, color: Colors.green[700]),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ),
+        ],
       ),
     );
   }

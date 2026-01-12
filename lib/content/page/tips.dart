@@ -321,7 +321,7 @@ class Tips extends StatelessWidget {
         icon: Icons.refresh_rounded,
         title: 'Refresh Soil Annually',
         description:
-            'Repot or refresh the top inch of soil yearly. Old soil loses nutrients and can become compacted, hindering growth.',
+            'Replot or refresh the top inch of soil yearly. Old soil loses nutrients and can become compacted, hindering growth.',
       ),
       PlantTip(
         icon: Icons.water_outlined,

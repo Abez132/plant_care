@@ -111,7 +111,6 @@ class _HomeState extends State<Home> {
                     imagePath: plant.imagePath,
                     createdAt: plant.createdAt,
                     onDelete: () async {
-                      // Cancel notifications for this plant
                       if (plant.plantId != null) {
                         await NotificationService.cancelPlantNotifications(
                           plant.plantId!,

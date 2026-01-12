@@ -40,9 +40,6 @@ class _BuildFormState extends State<BuildForm> {
   List<String> _generateWateringSchedule(int frequency) {
     List<String> schedule = [];
 
-    print('🕐 Generating watering schedule for frequency: $frequency');
-    print('🕐 Custom times available: $_customTimes');
-
     switch (frequency) {
       case 1:
         schedule = ['12:00 PM']; // Once at noon
@@ -62,20 +59,15 @@ class _BuildFormState extends State<BuildForm> {
           schedule = _customTimes
               .map((time) => _formatTimeOfDay(time))
               .toList();
-          print('🕐 Generated custom schedule: $schedule');
         } else {
-          print('❌ No custom times available, using default');
-          schedule = ['12:00 PM']; // Fallback
+          schedule = ['12:00 PM'];
         }
         break;
     }
-
-    print('🕐 Final schedule: $schedule');
     return schedule;
   }
 
   String _formatTimeOfDay(TimeOfDay time) {
-    // Convert 24-hour to 12-hour format properly
     final hour24 = time.hour;
     final minute = time.minute.toString().padLeft(2, '0');
 
@@ -101,9 +93,6 @@ class _BuildFormState extends State<BuildForm> {
     }
 
     final formatted = '$hour12:$minute $period';
-    print(
-      '🕐 Formatting time: ${time.hour}:${time.minute} (24h) -> $formatted (12h)',
-    );
     return formatted;
   }
 
@@ -126,11 +115,9 @@ class _BuildFormState extends State<BuildForm> {
   }
 
   void _removeCustomTime(int index) {
-    print('🕐 Removing custom time at index: $index');
     setState(() {
       _customTimes.removeAt(index);
     });
-    print('🕐 Custom times after removing: $_customTimes');
   }
 
   void _submitForm() async {
@@ -144,7 +131,6 @@ class _BuildFormState extends State<BuildForm> {
       return;
     }
 
-    // Validate custom schedule
     if (_wateringFrequency == 4 && _customTimes.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -157,14 +143,11 @@ class _BuildFormState extends State<BuildForm> {
       return;
     }
 
-    // ✅ Collected user data
     final plantName = _nameController.text;
     final wateringSchedule = _generateWateringSchedule(_wateringFrequency);
     final imageFile = _image;
     final plantId = DateTime.now()
-        .toIso8601String(); // Use timestamp as unique ID
-
-    // TODO: Save to Firebase / local storage later
+        .toIso8601String(); 
 
     debugPrint("Plant Name: $plantName");
     debugPrint("Watering Frequency: $_wateringFrequency times per day");
@@ -179,7 +162,6 @@ class _BuildFormState extends State<BuildForm> {
       plantId: plantId,
     );
 
-    // Schedule notifications for watering reminders
     await NotificationService.scheduleWateringNotifications(
       plantName: plantName,
       wateringTimes: wateringSchedule,
@@ -188,7 +170,6 @@ class _BuildFormState extends State<BuildForm> {
 
     if (!mounted) return;
 
-    // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -197,8 +178,6 @@ class _BuildFormState extends State<BuildForm> {
         duration: const Duration(seconds: 3),
       ),
     );
-
-    // Navigate back to home
     Navigator.of(context).pop(true); // Return true to indicate success
   }
 
@@ -233,19 +212,15 @@ class _BuildFormState extends State<BuildForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 📸 Enhanced image picker
               _buildImagePicker(theme),
               const SizedBox(height: 24),
 
-              // 🌿 Enhanced plant name field
               _buildPlantNameField(theme),
               const SizedBox(height: 24),
 
-              // 💧 Enhanced watering frequency selector
               _buildWateringFrequencySelector(theme),
               const SizedBox(height: 32),
 
-              // ✅ Enhanced submit button
               _buildSubmitButton(theme),
             ],
           ),
@@ -366,7 +341,7 @@ class _BuildFormState extends State<BuildForm> {
         TextFormField(
           controller: _nameController,
           decoration: InputDecoration(
-            hintText: "e.g., Monstera Deliciosa",
+            hintText: "e.g:- Tsegereda",
             prefixIcon: Icon(
               Icons.eco_rounded,
               color: theme.colorScheme.primary,
@@ -451,7 +426,6 @@ class _BuildFormState extends State<BuildForm> {
                     : _customTimes.map((t) => _formatTimeOfDay(t)).join(', '),
               ),
 
-              // Custom time management section
               if (_wateringFrequency == 4) ...[
                 const SizedBox(height: 20),
                 _buildCustomTimeSection(theme),
