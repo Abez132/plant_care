@@ -6,7 +6,7 @@ import 'package:plant_care/content/page/picture.dart';
 import 'package:plant_care/content/page/tips.dart';
 import 'package:plant_care/notifier/value.dart';
 
-List<Widget> pages = [Home(), Picture(), Tips()];
+List<Widget> pages = [Home(), PicturePage(), Tips()];
 
 class WidgetTree extends StatelessWidget {
   const WidgetTree({super.key});

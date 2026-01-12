@@ -2,13 +2,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-// import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:plant_care/content/widgetree.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:plant_care/content/page/onboarding_screen.dart';
 import 'package:plant_care/notifications/notification_service.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
@@ -60,7 +63,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const WidgetTree(),
+      home: const OnboardingScreen(),
     );
   }
 }

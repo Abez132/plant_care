@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 
 class PlantResultCard extends StatelessWidget {
   final String uploadedImageUrl;
@@ -14,6 +15,44 @@ class PlantResultCard extends StatelessWidget {
     required this.similarImages,
   });
 
+  Widget _buildUploadedImage() {
+    // Check if it's a local file path or network URL
+    if (uploadedImageUrl.startsWith('http://') ||
+        uploadedImageUrl.startsWith('https://')) {
+      // Network image
+      return Image.network(
+        uploadedImageUrl,
+        height: 250,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            height: 250,
+            width: double.infinity,
+            color: Colors.grey[300],
+            child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+          );
+        },
+      );
+    } else {
+      // Local file
+      return Image.file(
+        File(uploadedImageUrl),
+        height: 250,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            height: 250,
+            width: double.infinity,
+            color: Colors.grey[300],
+            child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+          );
+        },
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -26,12 +65,7 @@ class PlantResultCard extends StatelessWidget {
             // Uploaded Image
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Image.network(
-                uploadedImageUrl,
-                height: 250,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
+              child: _buildUploadedImage(),
             ),
             const SizedBox(height: 16),
 
