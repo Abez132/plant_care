@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:plant_care/content/widgetree.dart';
+import 'package:lottie/lottie.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -14,29 +15,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<OnboardingPage> _pages = [
     OnboardingPage(
-      icon: Icons.water_drop_rounded,
+      lottieAsset: "asset/plant1.json",
       title: "Smart Watering",
       subtitle: "Never Forget Again",
       description:
-          "Set custom watering schedules and get timely notifications. Keep your plants healthy and thriving!",
+          "Set custom watering schedules and get timely notifications.",
       color: const Color(0xFF2196F3),
       gradient: [const Color(0xFF2196F3), const Color(0xFF42A5F5)],
     ),
     OnboardingPage(
-      icon: Icons.local_florist_rounded,
+      lottieAsset: "asset/plant2.json",
       title: "Identify Plants",
       subtitle: "Discover & Learn",
       description:
-          "Take a photo of any plant and instantly identify it using advanced AI technology. Learn about your green friends!",
+          "Take a photo of any plant and instantly identify it using advanced AI technology.",
       color: const Color(0xFF4CAF50),
       gradient: [const Color(0xFF4CAF50), const Color(0xFF66BB6A)],
     ),
     OnboardingPage(
-      icon: Icons.eco_rounded,
+      lottieAsset: "asset/plant3.json",
       title: "Plant Care Tips",
       subtitle: "Expert Guidance",
       description:
-          "Access professional plant care tips and build your green thumb with expert advice and guidance.",
+          "Access professional plant care tips and build your green thumb with expert advice.",
       color: const Color(0xFF8BC34A),
       gradient: [const Color(0xFF8BC34A), const Color(0xFF9CCC65)],
     ),
@@ -166,7 +167,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Next/Get Started Button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -217,28 +217,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           children: [
             const SizedBox(height: 80),
 
-            // Icon with animated background
-            Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 30,
-                    offset: const Offset(0, 15),
-                  ),
-                ],
-              ),
-              child: Container(
-                margin: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(page.icon, size: 50, color: page.color),
+            SizedBox(
+              width: 300,
+              height: 300,
+              child: Lottie.asset(
+                page.lottieAsset,
+                fit: BoxFit.contain,
+                repeat: true,
+                animate: true,
               ),
             ),
             const SizedBox(height: 60),
@@ -268,9 +254,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height:12),
 
-            // Description
             Text(
               page.description,
               style: TextStyle(
@@ -289,7 +274,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 }
 
 class OnboardingPage {
-  final IconData icon;
+  final String lottieAsset;
   final String title;
   final String subtitle;
   final String description;
@@ -297,7 +282,7 @@ class OnboardingPage {
   final List<Color> gradient;
 
   OnboardingPage({
-    required this.icon,
+    required this.lottieAsset,
     required this.title,
     required this.subtitle,
     required this.description,
