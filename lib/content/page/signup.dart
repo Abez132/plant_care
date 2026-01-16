@@ -77,7 +77,16 @@ class _SignupState extends State<Signup> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    tooltip: 'Back',
+                  ),
+                ),
+                const SizedBox(height: 12),
                 _buildHeader(theme),
                 const SizedBox(height: 40),
                 _buildSignupForm(theme),

@@ -61,7 +61,16 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 40),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    tooltip: 'Back',
+                  ),
+                ),
+                const SizedBox(height: 12),
                 _buildHeader(theme),
                 const SizedBox(height: 48),
                 _buildLoginForm(theme),
@@ -372,9 +381,7 @@ class _LoginPageState extends State<LoginPage> {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: () {
-
-        },
+        onPressed: () {},
         icon: Container(
           padding: const EdgeInsets.all(2),
           child: Image.asset(
