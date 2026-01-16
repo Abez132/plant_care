@@ -17,7 +17,7 @@ class WidgetTree extends StatelessWidget {
       builder: (context, value, child) {
         return Scaffold(
           backgroundColor: const Color(0xFFF0F2F5),
-          bottomNavigationBar: value == 1 ? null : const Navbar(),
+          bottomNavigationBar:const Navbar(),
           body: pages.elementAt(value),
         );
       },

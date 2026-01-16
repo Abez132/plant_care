@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:plant_care/auth/auth.dart';
 import 'package:plant_care/content/page/login.dart';
 import 'package:plant_care/content/widgetree.dart';
@@ -515,16 +516,7 @@ class _SignupState extends State<Signup> {
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: () {},
-        icon: Container(
-          padding: const EdgeInsets.all(2),
-          child: Image.asset(
-            'assets/google_logo.png', // You'll need to add this asset
-            height: 18,
-            width: 18,
-            errorBuilder: (context, error, stackTrace) =>
-                const Icon(Icons.g_translate, color: Colors.red, size: 18),
-          ),
-        ),
+        icon: const FaIcon(FontAwesomeIcons.google, size: 20),
         label: const Text(
           'Sign up with Google',
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),

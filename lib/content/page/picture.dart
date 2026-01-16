@@ -7,7 +7,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:plant_care/content/page/login.dart';
-import 'package:plant_care/notifier/value.dart';
 import '../common/plant_card.dart';
 
 class PicturePage extends StatefulWidget {
@@ -305,7 +304,6 @@ class _PicturePageState extends State<PicturePage> {
         if (data['suggestions'] != null && data['suggestions'].isNotEmpty) {
           final suggestion = data['suggestions'][0];
 
-          // Extract similar images
           List<Map<String, dynamic>> similarImages = [];
           if (suggestion['similar_images'] != null) {
             similarImages = List<Map<String, dynamic>>.from(
@@ -317,8 +315,6 @@ class _PicturePageState extends State<PicturePage> {
               ),
             );
           }
-
-          // Navigate to PlantResultCard with API results
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => PlantResultCard(
@@ -405,13 +401,13 @@ class _PicturePageState extends State<PicturePage> {
             color: theme.colorScheme.onSurface,
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            indexNotifier.value = 0;
-          },
-          tooltip: 'Back to Home',
-        ),
+        // leading: IconButton(
+        //   icon: const Icon(Icons.arrow_back),
+        //   onPressed: () {
+        //     indexNotifier.value = 0;
+        //   },
+        //   tooltip: 'Back to Home',
+        // ),
         actions: [
           if (_image != null)
             IconButton(
@@ -422,40 +418,52 @@ class _PicturePageState extends State<PicturePage> {
         ],
       ),
       body: SingleChildScrollView(
+        
         padding: const EdgeInsets.all(20.0),
         child: Column(
+          
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary,
+                gradient: LinearGradient(
+                  colors: [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.secondary,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.green.withOpacity(0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
+                    color: theme.colorScheme.primary.withOpacity(0.25),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
               child: Column(
                 children: [
-                  Icon(Icons.eco, size: 48, color: Colors.white),
+                  Icon(Icons.eco, size: 48, color: theme.colorScheme.onPrimary),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Discover Your Plant',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Take a photo or add one we will tell you what it is',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, color: Colors.white70),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: theme.colorScheme.onPrimary.withOpacity(0.85),
+                    ),
                   ),
                 ],
               ),
@@ -617,7 +625,6 @@ class _PicturePageState extends State<PicturePage> {
                         ),
                       ),
                     ] else ...[
-                      // Image Preview
                       Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
@@ -733,102 +740,8 @@ class _PicturePageState extends State<PicturePage> {
               ),
             ),
 
-            const SizedBox(height: 24),
-
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 15,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.blue[100],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Icons.lightbulb_outline,
-                            color: Colors.blue[700],
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Tips for Better Results',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue[700],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    _buildTipItem(
-                      Icons.wb_sunny,
-                      'Take clear, well-lit photos',
-                    ),
-                    _buildTipItem(
-                      Icons.local_florist,
-                      'Include leaves, flowers, or distinctive features',
-                    ),
-                    _buildTipItem(
-                      Icons.blur_off,
-                      'Avoid blurry or dark images',
-                    ),
-                    _buildTipItem(
-                      Icons.zoom_in,
-                      'Get close to the plant for detail',
-                    ),
-                    _buildTipItem(
-                      Icons.flash_on,
-                      'Ensure good lighting conditions',
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildTipItem(IconData icon, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: Colors.green[100],
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Icon(icon, size: 16, color: Colors.green[700]),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-          ),
-        ],
       ),
     );
   }

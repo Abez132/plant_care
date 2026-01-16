@@ -25,7 +25,6 @@ class _HomeState extends State<Home> {
   Future<List<PlantEntry>> _initializeData() async {
     // Run migration first
     await DataMigration.migratePlantData();
-    // Then load plants
     return await loadPlantsFromJson();
   }
 
@@ -64,8 +63,9 @@ class _HomeState extends State<Home> {
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
               color: theme.colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(12),
+              shape: BoxShape.circle,
             ),
+            
             child: IconButton(
               onPressed: () {
                 Navigator.push(
@@ -79,6 +79,8 @@ class _HomeState extends State<Home> {
               ),
               tooltip: 'Profile',
             ),
+
+            
           ),
         ],
         centerTitle: true,
@@ -156,7 +158,6 @@ class _HomeState extends State<Home> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Beautiful plant illustration
             Container(
               width: 120,
               height: 120,
