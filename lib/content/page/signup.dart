@@ -23,7 +23,7 @@ class _SignupState extends State<Signup> {
   bool _isLoading = false;
   bool _acceptTerms = false;
 
-  void valide() async {
+  void validate() async {
     if (!_formKey.currentState!.validate()) return;
     if (!_acceptTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -54,6 +54,33 @@ class _SignupState extends State<Signup> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.message ?? 'Network or auth error'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _signUpWithGoogle() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final user = await authService.value.signInWithGoogle();
+      if (user != null && mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const WidgetTree()),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Google Sign-Up failed: ${e.toString()}'),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -452,7 +479,7 @@ class _SignupState extends State<Signup> {
     return SizedBox(
       width: double.infinity,
       child: FilledButton(
-        onPressed: _isLoading ? null : valide,
+        onPressed: _isLoading ? null : validate,
         style: FilledButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
@@ -515,7 +542,7 @@ class _SignupState extends State<Signup> {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: () {},
+        onPressed: _isLoading ? null : _signUpWithGoogle,
         icon: const FaIcon(FontAwesomeIcons.google, size: 20),
         label: const Text(
           'Sign up with Google',
