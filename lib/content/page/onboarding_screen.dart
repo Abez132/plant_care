@@ -121,7 +121,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
 
-          // Bottom Navigation
           Positioned(
             bottom: 0,
             left: 0,
