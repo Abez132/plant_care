@@ -97,6 +97,7 @@ class _HomeState extends State<Home> {
               if (snapshot.hasError) {
                 return Center(child: Text('Error: ${snapshot.error}'));
               }
+              //the plants u have
               final data = snapshot.data ?? [];
               if (data.isEmpty) {
                 return _buildEmptyState(theme);

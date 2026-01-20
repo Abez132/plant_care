@@ -52,7 +52,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _nextPage() {
     if (_currentPage < _pages.length - 1) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
       );
     } else {
@@ -69,7 +69,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
-        transitionDuration: const Duration(milliseconds: 600),
+        transitionDuration: const Duration(milliseconds: 400),
       ),
     );
   }
@@ -79,7 +79,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Page View
           PageView.builder(
             controller: _pageController,
             onPageChanged: (index) {
@@ -93,9 +92,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             },
           ),
 
-          // Top Skip Button
           Positioned(
-            top: 50,
+            top: 30,
             right: 20,
             child: SafeArea(
               child: TextButton(
@@ -217,8 +215,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             const SizedBox(height: 80),
 
             SizedBox(
-              width: 300,
-              height: 300,
+              width: 250,
+              height: 250,
               child: Lottie.asset(
                 page.lottieAsset,
                 fit: BoxFit.contain,
