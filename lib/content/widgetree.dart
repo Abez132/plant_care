@@ -5,20 +5,23 @@ import 'package:plant_care/content/page/picture.dart';
 import 'package:plant_care/content/page/tips.dart';
 import 'package:plant_care/notifier/value.dart';
 
-List<Widget> pages = [Home(), PicturePage(), Tips()];
-
 class WidgetTree extends StatelessWidget {
   const WidgetTree({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder(
+    // Use a const navbar as the child so it never rebuilds when the index changes
+    return ValueListenableBuilder<int>(
       valueListenable: indexNotifier,
-      builder: (context, value, child) {
+      child: const Navbar(),
+      builder: (context, index, navbar) {
         return Scaffold(
-          backgroundColor: const Color(0xFFF0F2F5),
-          bottomNavigationBar:const Navbar(),
-          body: pages.elementAt(value),
+          // Use IndexedStack so pages keep their state when switching tabs
+          body: IndexedStack(
+            index: index,
+            children: const [Home(), PicturePage(), Tips()],
+          ),
+          bottomNavigationBar: navbar,
         );
       },
     );

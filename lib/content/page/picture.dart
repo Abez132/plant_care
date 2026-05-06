@@ -24,302 +24,255 @@ class _PicturePageState extends State<PicturePage> {
   @override
   void initState() {
     super.initState();
-    _checkAuthStatus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (FirebaseAuth.instance.currentUser == null) {
+        _showLoginDialog();
+      }
+    });
   }
 
-  void _checkAuthStatus() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showLoginDialog();
-      });
-    }
-  }
+  // ── Auth ──────────────────────────────────────────────────────────────────
 
   void _showLoginDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Authentication Required'),
-          content: const Text(
-            'You need to be logged in to use the plant identification feature.',
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Authentication Required'),
+        content: const Text(
+          'You need to be logged in to use the plant identification feature.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const LoginPage()),
+              );
+            },
+            child: const Text('Login'),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              },
-              child: const Text('Login'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-          ],
-        );
-      },
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
     );
   }
 
-  Future<bool> _checkInternetConnection() async {
-    try {
-      final connectivityResult = await Connectivity().checkConnectivity();
-      if (connectivityResult == ConnectivityResult.none) {
-        return false;
-      }
+  // ── Connectivity ──────────────────────────────────────────────────────────
 
+  Future<bool> _hasInternet() async {
+    try {
+      final result = await Connectivity().checkConnectivity();
+      if (result == ConnectivityResult.none) return false;
       final response = await http
           .get(Uri.parse('https://www.google.com'))
           .timeout(const Duration(seconds: 5));
       return response.statusCode == 200;
-    } catch (e) {
+    } catch (_) {
       return false;
     }
   }
 
-  void _showNoInternetDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('No Internet Connection'),
-          content: const Text(
-            'Please check your internet connection and try again.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  // ── Image picking ─────────────────────────────────────────────────────────
 
   Future<void> _pickImage(ImageSource source) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
+    if (FirebaseAuth.instance.currentUser == null) {
       _showLoginDialog();
       return;
     }
-
-    final hasInternet = await _checkInternetConnection();
-    if (!hasInternet) {
-      _showNoInternetDialog();
+    if (!await _hasInternet()) {
+      _showSimpleDialog(
+        title: 'No Internet Connection',
+        message: 'Please check your internet connection and try again.',
+      );
       return;
     }
-
     try {
-      final XFile? pickedFile = await _picker.pickImage(
+      final XFile? picked = await _picker.pickImage(
         source: source,
-        maxWidth: 1800,
-        maxHeight: 1800,
-        imageQuality: 85,
+        maxWidth: 1200,
+        maxHeight: 1200,
+        imageQuality: 80,
       );
-
-      if (pickedFile != null) {
-        final File imageFile = File(pickedFile.path);
-        _showImageConfirmationDialog(imageFile);
-      }
+      if (picked != null) _showImageConfirmationDialog(File(picked.path));
     } catch (e) {
       _showErrorDialog('Failed to pick image: $e');
     }
   }
 
+  void _showImageSourceDialog() {
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Select Image Source'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.camera_alt_rounded,
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                    title: const Text('Camera'),
+                    subtitle: const Text('Take a new photo'),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      _pickImage(ImageSource.camera);
+                    },
+                  ),
+                  Divider(
+                    height: 1,
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                  ),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.photo_library_rounded,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    title: const Text('Gallery'),
+                    subtitle: const Text('Choose from gallery'),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      _pickImage(ImageSource.gallery);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showImageConfirmationDialog(File imageFile) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Text('Confirm Image'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Is this the image you want to identify?'),
-              const SizedBox(height: 16),
-              Container(
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Confirm Image'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Is this the image you want to identify?'),
+            const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.file(
+                imageFile,
                 height: 200,
                 width: 200,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[300]!),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(imageFile, fit: BoxFit.cover),
-                ),
+                fit: BoxFit.cover,
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                setState(() {
-                  _image = imageFile;
-                });
-                _identifyPlant();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green[700],
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text('Identify Plant'),
             ),
           ],
-        );
-      },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              setState(() => _image = imageFile);
+              _identifyPlant();
+            },
+            child: const Text('Identify Plant'),
+          ),
+        ],
+      ),
     );
   }
 
-  void _showImageSourceDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Text('Select Image Source'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.blue[100],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(Icons.camera_alt, color: Colors.blue[700]),
-                      ),
-                      title: const Text('Camera'),
-                      subtitle: const Text('Take a new photo'),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        _pickImage(ImageSource.camera);
-                      },
-                    ),
-                    Divider(height: 1, color: Colors.grey[300]),
-                    ListTile(
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.green[100],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.photo_library,
-                          color: Colors.green[700],
-                        ),
-                      ),
-                      title: const Text('Gallery'),
-                      subtitle: const Text('Choose from gallery'),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        _pickImage(ImageSource.gallery);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+  // ── Plant identification ──────────────────────────────────────────────────
 
   Future<void> _identifyPlant() async {
     if (_image == null) return;
-
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      final uri = Uri.parse('https://api.plant.id/v2/identify');
-
-      final bytes = await _image!.readAsBytes();
-      final base64Image = base64Encode(bytes);
-
       final apiKey = dotenv.env['PLANT_ID_KEY'];
       if (apiKey == null || apiKey.isEmpty) {
         throw Exception('API key not found in environment variables');
       }
 
-      final requestBody = {
-        'images': [base64Image],
-        'modifiers': ['similar_images'],
-        'plant_details': [
-          'common_names',
-          'url',
-          'description',
-          'taxonomy',
-          'rank',
-          'gbif_id',
-          'inaturalist_id',
-          'image',
-          'synonyms',
-          'edible_parts',
-          'watering',
-        ],
-        'plant_language': 'en',
-      };
+      final bytes = await _image!.readAsBytes();
+      final base64Image = base64Encode(bytes);
 
       final response = await http.post(
-        uri,
+        Uri.parse('https://api.plant.id/v2/identify'),
         headers: {'Content-Type': 'application/json', 'Api-Key': apiKey},
-        body: json.encode(requestBody),
+        body: json.encode({
+          'images': [base64Image],
+          'modifiers': ['similar_images'],
+          'plant_details': [
+            'common_names',
+            'url',
+            'description',
+            'taxonomy',
+            'rank',
+            'image',
+            'synonyms',
+            'edible_parts',
+            'watering',
+          ],
+          'plant_language': 'en',
+        }),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = json.decode(response.body);
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final suggestions = data['suggestions'] as List?;
 
-        if (data['suggestions'] != null && data['suggestions'].isNotEmpty) {
-          final suggestion = data['suggestions'][0];
-
-          List<Map<String, dynamic>> similarImages = [];
-          if (suggestion['similar_images'] != null) {
-            similarImages = List<Map<String, dynamic>>.from(
-              suggestion['similar_images'].map(
+        if (suggestions != null && suggestions.isNotEmpty) {
+          final suggestion = suggestions[0] as Map<String, dynamic>;
+          final rawImages = suggestion['similar_images'] as List? ?? [];
+          final similarImages = rawImages
+              .map(
                 (img) => {
-                  'url': img['url'],
-                  'similarity': img['similarity'] ?? 0.0,
+                  'url': img['url'] as String? ?? '',
+                  'similarity': (img['similarity'] ?? 0.0) as double,
                 },
-              ),
-            );
-          }
+              )
+              .toList();
+
+          if (!mounted) return;
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => PlantResultCard(
+              builder: (_) => PlantResultCard(
                 uploadedImageUrl: _image!.path,
-                plantName: suggestion['plant_name'] ?? 'Unknown Plant',
+                plantName:
+                    suggestion['plant_name'] as String? ?? 'Unknown Plant',
                 probability: (suggestion['probability'] ?? 0.0).toDouble(),
                 similarImages: similarImages,
               ),
@@ -332,64 +285,69 @@ class _PicturePageState extends State<PicturePage> {
         }
       } else {
         _showErrorDialog(
-          'Plant identification failed. Status: ${response.statusCode}\nResponse: ${response.body}',
+          'Plant identification failed (${response.statusCode}).',
         );
       }
-      setState(() {
-        _isLoading = false;
-      });
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
       _showErrorDialog('Failed to identify plant: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _showErrorDialog(String message) {
+  // ── Dialogs ───────────────────────────────────────────────────────────────
+
+  void _showSimpleDialog({required String title, required String message}) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
           ),
-          title: Row(
-            children: [
-              Icon(Icons.error_outline, color: Colors.red[600]),
-              const SizedBox(width: 8),
-              const Text('Error'),
-            ],
-          ),
-          content: Text(message),
-          actions: [
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red[600],
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
 
-  void _clearImage() {
-    setState(() {
-      _image = null;
-    });
+  void _showErrorDialog(String message) {
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.error_outline_rounded, color: theme.colorScheme.error),
+            const SizedBox(width: 8),
+            const Text('Error'),
+          ],
+        ),
+        content: Text(message),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
+            ),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
     final theme = Theme.of(context);
+    final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -401,348 +359,340 @@ class _PicturePageState extends State<PicturePage> {
             color: theme.colorScheme.onSurface,
           ),
         ),
-        // leading: IconButton(
-        //   icon: const Icon(Icons.arrow_back),
-        //   onPressed: () {
-        //     indexNotifier.value = 0;
-        //   },
-        //   tooltip: 'Back to Home',
-        // ),
+        backgroundColor: theme.colorScheme.surface,
+        surfaceTintColor: theme.colorScheme.surfaceTint,
         actions: [
           if (_image != null)
             IconButton(
-              onPressed: _clearImage,
-              icon: const Icon(Icons.clear),
+              onPressed: () => setState(() => _image = null),
+              icon: const Icon(Icons.clear_rounded),
               tooltip: 'Clear Image',
             ),
         ],
       ),
       body: SingleChildScrollView(
-        
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(20),
         child: Column(
-          
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.secondary,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.25),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Icon(Icons.eco, size: 48, color: theme.colorScheme.onPrimary),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Discover Your Plant',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Take a photo or add one we will tell you what it is',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: theme.colorScheme.onPrimary.withOpacity(0.85),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
+            // Hero banner
+            _HeroBanner(theme: theme),
             const SizedBox(height: 24),
 
-            if (user == null)
-              Container(
-                margin: const EdgeInsets.only(bottom: 20),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.orange[50],
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.orange[200]!),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.orange[100],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.warning_amber,
-                        color: Colors.orange[700],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Authentication Required',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.orange[800],
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Please log in to use plant identification',
-                            style: TextStyle(color: Colors.orange[700]),
-                          ),
-                        ],
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(
-                            builder: (context) => const LoginPage(),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange[600],
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('Login'),
-                    ),
-                  ],
-                ),
-              ),
+            // Auth warning
+            if (user == null) ...[
+              _AuthWarningBanner(theme: theme),
+              const SizedBox(height: 16),
+            ],
 
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    if (_image == null) ...[
-                      Container(
-                        height: 250,
-                        width: 400,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[50],
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.grey[300]!,
-                            style: BorderStyle.solid,
-                            width: 2,
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                color: Colors.green[100],
-                                borderRadius: BorderRadius.circular(50),
-                              ),
-                              child: Icon(
-                                Icons.camera_alt,
-                                size: 48,
-                                color: Colors.green[700],
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'No Image Selected',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Take a photo or select from gallery\nto identify your plant',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton.icon(
-                          onPressed: user != null
-                              ? _showImageSourceDialog
-                              : null,
-                          icon: const Icon(Icons.add_a_photo, size: 24),
-                          label: const Text(
-                            'Add Photo',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: theme.colorScheme.primaryContainer,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 2,
-                          ),
-                        ),
-                      ),
-                    ] else ...[
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.file(
-                            _image!,
-                            height: 300,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      if (_isLoading) ...[
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.blue[50],
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Column(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue[100],
-                                  borderRadius: BorderRadius.circular(50),
-                                ),
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.blue[700]!,
-                                  ),
-                                  strokeWidth: 3,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Analyzing your plant...',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.blue[700],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'This may take a few seconds',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.blue[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-
-                      const SizedBox(height: 20),
-
-                      Row(
-                        children: [
-                          Expanded(
-                            child: SizedBox(
-                              height: 50,
-                              child: OutlinedButton.icon(
-                                onPressed: _showImageSourceDialog,
-                                icon: const Icon(Icons.refresh, size: 20),
-                                label: const Text('New Photo'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.blue[700],
-                                  side: BorderSide(color: Colors.blue[300]!),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: SizedBox(
-                              height: 50,
-                              child: ElevatedButton.icon(
-                                onPressed: !_isLoading ? _identifyPlant : null,
-                                icon: const Icon(Icons.search, size: 20),
-                                label: const Text('Identify Plant'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green[700],
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  elevation: 2,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
+            // Main card
+            _ImageCard(
+              image: _image,
+              isLoading: _isLoading,
+              isAuthenticated: user != null,
+              onAddPhoto: _showImageSourceDialog,
+              onNewPhoto: _showImageSourceDialog,
+              onIdentify: _identifyPlant,
+              theme: theme,
             ),
-
           ],
         ),
       ),
+    );
+  }
+}
+
+// ── Sub-widgets ───────────────────────────────────────────────────────────────
+
+class _HeroBanner extends StatelessWidget {
+  const _HeroBanner({required this.theme});
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withValues(alpha: 0.25),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.eco_rounded, size: 48, color: theme.colorScheme.onPrimary),
+          const SizedBox(height: 12),
+          Text(
+            'Discover Your Plant',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Take a photo or add one — we\'ll tell you what it is',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 15,
+              color: theme.colorScheme.onPrimary.withValues(alpha: 0.85),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AuthWarningBanner extends StatelessWidget {
+  const _AuthWarningBanner({required this.theme});
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.error.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Authentication Required',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onErrorContainer,
+                  ),
+                ),
+                Text(
+                  'Please log in to use plant identification',
+                  style: TextStyle(
+                    color: theme.colorScheme.onErrorContainer.withValues(
+                      alpha: 0.8,
+                    ),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const LoginPage()),
+            ),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            child: const Text('Login'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ImageCard extends StatelessWidget {
+  const _ImageCard({
+    required this.image,
+    required this.isLoading,
+    required this.isAuthenticated,
+    required this.onAddPhoto,
+    required this.onNewPhoto,
+    required this.onIdentify,
+    required this.theme,
+  });
+
+  final File? image;
+  final bool isLoading;
+  final bool isAuthenticated;
+  final VoidCallback onAddPhoto;
+  final VoidCallback onNewPhoto;
+  final VoidCallback onIdentify;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      padding: const EdgeInsets.all(20),
+      child: image == null ? _buildEmpty() : _buildWithImage(),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Column(
+      children: [
+        Container(
+          height: 220,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.3),
+              width: 2,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.camera_alt_rounded,
+                  size: 44,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No Image Selected',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Take a photo or select from gallery\nto identify your plant',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.7,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: FilledButton.icon(
+            onPressed: isAuthenticated ? onAddPhoto : null,
+            icon: const Icon(Icons.add_a_photo_rounded),
+            label: const Text(
+              'Add Photo',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWithImage() {
+    return Column(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Image.file(
+            image!,
+            height: 280,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (isLoading)
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.secondaryContainer.withValues(
+                alpha: 0.5,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: theme.colorScheme.secondary,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  'Analyzing your plant…',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSecondaryContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: onNewPhoto,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('New Photo'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: isLoading ? null : onIdentify,
+                icon: const Icon(Icons.search_rounded, size: 18),
+                label: const Text('Identify'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

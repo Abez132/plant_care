@@ -9,51 +9,75 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends State<OnboardingScreen>
+    with TickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnim;
 
-  final List<OnboardingPage> _pages = [
-    OnboardingPage(
-      lottieAsset: "asset/plant1.json",
-      title: "Smart Watering",
-      subtitle: "Never Forget Again",
+  static const List<_OnboardingData> _pages = [
+    _OnboardingData(
+      lottieAsset: 'asset/plant1.json',
+      title: 'Smart Watering',
+      subtitle: 'Never Forget Again',
       description:
-          "Set custom watering schedules and get timely notifications.",
-      color: const Color(0xFF2196F3),
-      gradient: [const Color(0xFF2196F3), const Color(0xFF42A5F5)],
+          'Set custom watering schedules and get timely reminders to keep every plant perfectly hydrated.',
+      bgTop: Color(0xFF1B4332),
+      bgBottom: Color(0xFF2D6A4F),
+      accentColor: Color(0xFF52B788),
     ),
-    OnboardingPage(
-      lottieAsset: "asset/plant2.json",
-      title: "Identify Plants",
-      subtitle: "Discover & Learn",
+    _OnboardingData(
+      lottieAsset: 'asset/plant2.json',
+      title: 'Identify Plants',
+      subtitle: 'Discover & Learn',
       description:
-          "Take a photo of any plant and instantly identify it using advanced AI technology.",
-      color: const Color(0xFF4CAF50),
-      gradient: [const Color(0xFF4CAF50), const Color(0xFF66BB6A)],
+          'Snap a photo of any plant and our AI instantly tells you exactly what it is.',
+      bgTop: Color(0xFF1A3A2A),
+      bgBottom: Color(0xFF40916C),
+      accentColor: Color(0xFF74C69D),
     ),
-    OnboardingPage(
-      lottieAsset: "asset/plant3.json",
-      title: "Plant Care Tips",
-      subtitle: "Expert Guidance",
+    _OnboardingData(
+      lottieAsset: 'asset/plant3.json',
+      title: 'Expert Tips',
+      subtitle: 'Grow with Confidence',
       description:
-          "Access professional plant care tips and build your green thumb with expert advice.",
-      color: const Color(0xFF8BC34A),
-      gradient: [const Color(0xFF8BC34A), const Color(0xFF9CCC65)],
+          'Access curated plant care guides and build your green thumb with expert advice.',
+      bgTop: Color(0xFF081C15),
+      bgBottom: Color(0xFF52B788),
+      accentColor: Color(0xFFB7E4C7),
     ),
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+    _fadeController.forward();
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
+    _fadeController.dispose();
     super.dispose();
+  }
+
+  void _onPageChanged(int index) {
+    _fadeController.reset();
+    setState(() => _currentPage = index);
+    _fadeController.forward();
   }
 
   void _nextPage() {
     if (_currentPage < _pages.length - 1) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOutCubic,
       );
     } else {
       _navigateToHome();
@@ -64,205 +88,308 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const WidgetTree(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 400),
+        pageBuilder: (context, a, b) => const WidgetTree(),
+        transitionsBuilder: (context, a, b, child) =>
+            FadeTransition(opacity: a, child: child),
+        transitionDuration: const Duration(milliseconds: 500),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final page = _pages[_currentPage];
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
       body: Stack(
         children: [
-          PageView.builder(
-            controller: _pageController,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index;
-              });
-            },
-            itemCount: _pages.length,
-            itemBuilder: (context, index) {
-              return _buildPage(_pages[index]);
-            },
+          // Animated gradient background
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [page.bgTop, page.bgBottom],
+              ),
+            ),
           ),
 
+          // Decorative circles
           Positioned(
-            top: 30,
-            right: 20,
+            top: -60,
+            right: -60,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 600),
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: page.accentColor.withValues(alpha: 0.08),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: size.height * 0.35,
+            left: -40,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 600),
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: page.accentColor.withValues(alpha: 0.06),
+              ),
+            ),
+          ),
+
+          // Page content
+          PageView.builder(
+            controller: _pageController,
+            onPageChanged: _onPageChanged,
+            itemCount: _pages.length,
+            itemBuilder: (_, index) => _OnboardingPage(
+              data: _pages[index],
+              fadeAnim: index == _currentPage
+                  ? _fadeAnim
+                  : const AlwaysStoppedAnimation(1.0),
+            ),
+          ),
+
+          // Skip
+          Positioned(
+            top: 0,
+            right: 0,
             child: SafeArea(
-              child: TextButton(
-                onPressed: _navigateToHome,
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.2),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+              child: Padding(
+                padding: const EdgeInsets.only(right: 20, top: 8),
+                child: TextButton(
+                  onPressed: _navigateToHome,
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white.withValues(alpha: 0.7),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                ),
-                child: const Text(
-                  'Skip',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
+                  child: const Text(
+                    'Skip',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
                   ),
                 ),
               ),
             ),
           ),
 
+          // Bottom panel
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Page Indicators
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        _pages.length,
-                        (index) => AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: _currentPage == index ? 24 : 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: _currentPage == index
-                                ? _pages[_currentPage].color
-                                : Colors.grey.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _nextPage,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _pages[_currentPage].color,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 4,
-                        ),
-                        child: Text(
-                          _currentPage == _pages.length - 1
-                              ? 'Get Started'
-                              : 'Next',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            child: _BottomPanel(
+              pages: _pages,
+              currentPage: _currentPage,
+              onNext: _nextPage,
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildPage(OnboardingPage page) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: page.gradient,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(height: 80),
+class _OnboardingPage extends StatelessWidget {
+  const _OnboardingPage({required this.data, required this.fadeAnim});
 
-            SizedBox(
-              width: 250,
-              height: 250,
+  final _OnboardingData data;
+  final Animation<double> fadeAnim;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 100),
+          FadeTransition(
+            opacity: fadeAnim,
+            child: SizedBox(
+              width: 260,
+              height: 260,
               child: Lottie.asset(
-                page.lottieAsset,
+                data.lottieAsset,
                 fit: BoxFit.contain,
                 repeat: true,
-                animate: true,
               ),
             ),
-            const SizedBox(height: 60),
-
-            // Title and Subtitle
-            Column(
+          ),
+          const SizedBox(height: 40),
+          FadeTransition(
+            opacity: fadeAnim,
+            child: Column(
               children: [
-                Text(
-                  page.subtitle,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 1.2,
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: data.accentColor.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: data.accentColor.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Text(
+                    data.subtitle.toUpperCase(),
+                    style: TextStyle(
+                      color: data.accentColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.8,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 Text(
-                  page.title,
+                  data.title,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    height: 1.2,
+                    fontSize: 34,
+                    fontWeight: FontWeight.w800,
+                    height: 1.1,
+                    letterSpacing: -0.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  data.description,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.75),
+                    fontSize: 16,
+                    height: 1.6,
                   ),
                   textAlign: TextAlign.center,
                 ),
               ],
             ),
-            const SizedBox(height:12),
+          ),
+          const SizedBox(height: 200),
+        ],
+      ),
+    );
+  }
+}
 
-            Text(
-              page.description,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
-                fontSize: 16,
-                height: 1.6,
-              ),
-              textAlign: TextAlign.center,
+class _BottomPanel extends StatelessWidget {
+  const _BottomPanel({
+    required this.pages,
+    required this.currentPage,
+    required this.onNext,
+  });
+
+  final List<_OnboardingData> pages;
+  final int currentPage;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final page = pages[currentPage];
+    return Container(
+      padding: const EdgeInsets.fromLTRB(28, 28, 28, 0),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Pill indicator
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(pages.length, (i) {
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeInOut,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: currentPage == i ? 28 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: currentPage == i
+                        ? const Color(0xFF2D6A4F)
+                        : const Color(0xFFD1FAE5),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                );
+              }),
             ),
-            const SizedBox(height: 120),
+            const SizedBox(height: 28),
+            Row(
+              children: [
+                // Page counter
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${currentPage + 1} / ${pages.length}',
+                        style: const TextStyle(
+                          color: Color(0xFF9CA3AF),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        page.title,
+                        style: const TextStyle(
+                          color: Color(0xFF1B4332),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Next button
+                GestureDetector(
+                  onTap: onNext,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2D6A4F),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(
+                            0xFF2D6A4F,
+                          ).withValues(alpha: 0.35),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      currentPage == pages.length - 1
+                          ? Icons.check_rounded
+                          : Icons.arrow_forward_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
           ],
         ),
       ),
@@ -270,20 +397,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-class OnboardingPage {
-  final String lottieAsset;
-  final String title;
-  final String subtitle;
-  final String description;
-  final Color color;
-  final List<Color> gradient;
-
-  OnboardingPage({
+class _OnboardingData {
+  const _OnboardingData({
     required this.lottieAsset,
     required this.title,
     required this.subtitle,
     required this.description,
-    required this.color,
-    required this.gradient,
+    required this.bgTop,
+    required this.bgBottom,
+    required this.accentColor,
   });
+
+  final String lottieAsset;
+  final String title;
+  final String subtitle;
+  final String description;
+  final Color bgTop;
+  final Color bgBottom;
+  final Color accentColor;
 }
