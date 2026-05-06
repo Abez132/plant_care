@@ -13,491 +13,576 @@ class BuildForm extends StatefulWidget {
 
 class _BuildFormState extends State<BuildForm> {
   final _formKey = GlobalKey<FormState>();
-
-  final TextEditingController _nameController = TextEditingController();
+  final _nameController = TextEditingController();
 
   File? _image;
-  int _wateringFrequency = 1; // 1, 2, 3, or 4 (custom) times per day
-  final List<TimeOfDay> _customTimes = []; // For custom frequency
+  int _wateringFrequency = 1;
+  final List<TimeOfDay> _customTimes = [];
 
   @override
-  void initState() {
-    super.initState();
-    // Remove debug test - no longer needed
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
   }
+
+  // ── Image ─────────────────────────────────────────────────────────────────
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-
-    if (picked != null) {
-      setState(() {
-        _image = File(picked.path);
-      });
-    }
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1200,
+      maxHeight: 1200,
+      imageQuality: 85,
+    );
+    if (picked != null) setState(() => _image = File(picked.path));
   }
 
-  List<String> _generateWateringSchedule(int frequency) {
-    List<String> schedule = [];
+  // ── Schedule helpers ──────────────────────────────────────────────────────
 
+  List<String> _generateSchedule(int frequency) {
     switch (frequency) {
       case 1:
-        schedule = ['12:00 PM']; // Once at noon
-        break;
+        return ['12:00 PM'];
       case 2:
-        schedule = ['8:00 AM', '8:00 PM']; // Morning and evening
-        break;
+        return ['8:00 AM', '8:00 PM'];
       case 3:
-        schedule = [
-          '7:00 AM',
-          '1:00 PM',
-          '7:00 PM',
-        ]; // Morning, afternoon, evening
-        break;
-      case 4: // Custom
-        if (_customTimes.isNotEmpty) {
-          schedule = _customTimes
-              .map((time) => _formatTimeOfDay(time))
-              .toList();
-        } else {
-          schedule = ['12:00 PM'];
-        }
-        break;
+        return ['7:00 AM', '1:00 PM', '7:00 PM'];
+      default:
+        return _customTimes.isNotEmpty
+            ? _customTimes.map(_formatTime).toList()
+            : ['12:00 PM'];
     }
-    return schedule;
   }
 
-  String _formatTimeOfDay(TimeOfDay time) {
-    final hour24 = time.hour;
-    final minute = time.minute.toString().padLeft(2, '0');
-
-    String period;
-    int hour12;
-
-    if (hour24 == 0) {
-      // Midnight: 0:xx -> 12:xx AM
-      hour12 = 12;
-      period = 'AM';
-    } else if (hour24 < 12) {
-      // Morning: 1:xx-11:xx -> 1:xx-11:xx AM
-      hour12 = hour24;
-      period = 'AM';
-    } else if (hour24 == 12) {
-      // Noon: 12:xx -> 12:xx PM
-      hour12 = 12;
-      period = 'PM';
-    } else {
-      // Afternoon/Evening: 13:xx-23:xx -> 1:xx-11:xx PM
-      hour12 = hour24 - 12;
-      period = 'PM';
-    }
-
-    final formatted = '$hour12:$minute $period';
-    return formatted;
+  String _formatTime(TimeOfDay t) {
+    final h24 = t.hour;
+    final min = t.minute.toString().padLeft(2, '0');
+    if (h24 == 0) return '12:$min AM';
+    if (h24 < 12) return '$h24:$min AM';
+    if (h24 == 12) return '12:$min PM';
+    return '${h24 - 12}:$min PM';
   }
 
   Future<void> _addCustomTime() async {
-    final TimeOfDay? picked = await showTimePicker(
+    final picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
     );
-
     if (picked != null) {
       setState(() {
         _customTimes.add(picked);
-        _customTimes.sort((a, b) {
-          final aMinutes = a.hour * 60 + a.minute;
-          final bMinutes = b.hour * 60 + b.minute;
-          return aMinutes.compareTo(bMinutes);
-        });
+        _customTimes.sort(
+          (a, b) => (a.hour * 60 + a.minute).compareTo(b.hour * 60 + b.minute),
+        );
       });
     }
   }
 
-  void _removeCustomTime(int index) {
-    setState(() {
-      _customTimes.removeAt(index);
-    });
-  }
+  // ── Submit ────────────────────────────────────────────────────────────────
 
-  void _submitForm() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_image == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select a plant photo")),
-      );
+      _showSnack('Please select a plant photo');
       return;
     }
-
     if (_wateringFrequency == 4 && _customTimes.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Please add at least one watering time for custom schedule",
-          ),
-        ),
-      );
+      _showSnack('Please add at least one custom watering time');
       return;
     }
 
-    final plantName = _nameController.text;
-    final wateringSchedule = _generateWateringSchedule(_wateringFrequency);
-    final imageFile = _image;
-    final plantId = DateTime.now()
-        .toIso8601String(); 
-
-    debugPrint("Plant Name: $plantName");
-    debugPrint("Watering Frequency: $_wateringFrequency times per day");
-    debugPrint("Watering Schedule: $wateringSchedule");
-    debugPrint("Image Path: ${imageFile!.path}");
+    final name = _nameController.text.trim();
+    final schedule = _generateSchedule(_wateringFrequency);
+    final plantId = DateTime.now().toIso8601String();
 
     await savePlantToJson(
-      name: plantName,
+      name: name,
       wateringFrequency: _wateringFrequency,
-      wateringSchedule: wateringSchedule,
-      imageFile: imageFile,
+      wateringSchedule: schedule,
+      imageFile: _image!,
       plantId: plantId,
     );
 
     await NotificationService.scheduleWateringNotifications(
-      plantName: plantName,
-      wateringTimes: wateringSchedule,
+      plantName: name,
+      wateringTimes: schedule,
       plantId: plantId,
     );
 
     if (!mounted) return;
+    _showSnack('$name saved 🌱  ·  Reminders set for ${schedule.join(', ')}');
+    Navigator.of(context).pop(true);
+  }
 
+  void _showSnack(String msg) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          "$plantName saved successfully 🌱\nNotifications scheduled for ${wateringSchedule.join(', ')}",
-        ),
-        duration: const Duration(seconds: 3),
+        content: Text(msg),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
-    Navigator.of(context).pop(true); // Return true to indicate success
   }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: theme.colorScheme.surfaceContainerLowest,
       appBar: AppBar(
-        title: Text(
-          "Add Plant",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurface,
-          ),
+        title: const Text(
+          'Add Plant',
+          style: TextStyle(fontWeight: FontWeight.w700),
         ),
-        backgroundColor: theme.colorScheme.surface,
-        surfaceTintColor: theme.colorScheme.surfaceTint,
+        backgroundColor: theme.colorScheme.surfaceContainerLowest,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.of(context).pop(),
-          icon: Icon(
-            Icons.arrow_back_rounded,
-            color: theme.colorScheme.onSurface,
-          ),
+          icon: const Icon(Icons.arrow_back_rounded),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildImagePicker(theme),
-              const SizedBox(height: 24),
-
-              _buildPlantNameField(theme),
-              const SizedBox(height: 24),
-
-              _buildWateringFrequencySelector(theme),
-              const SizedBox(height: 32),
-
-              _buildSubmitButton(theme),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildImagePicker(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Plant Photo',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: _pickImage,
-          child: Container(
-            height: 180,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                width: 2,
-              ),
-            ),
-            child: _image == null
-                ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.add_a_photo_rounded,
-                          size: 32,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Tap to add a photo',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Choose from gallery',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  )
-                : Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(18),
-                        child: Image.file(
-                          _image!,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
-                        ),
-                      ),
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surface.withValues(
-                              alpha: 0.9,
-                            ),
-                            shape: BoxShape.circle,
-                          ),
-                          child: IconButton(
-                            onPressed: () => setState(() => _image = null),
-                            icon: Icon(
-                              Icons.close_rounded,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                            iconSize: 20,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPlantNameField(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Plant Name',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: _nameController,
-          decoration: InputDecoration(
-            hintText: "e.g:- Tsegereda",
-            prefixIcon: Icon(
-              Icons.eco_rounded,
-              color: theme.colorScheme.primary,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: theme.colorScheme.outline),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: theme.colorScheme.outline),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(
-                color: theme.colorScheme.primary,
-                width: 2,
-              ),
-            ),
-            filled: true,
-            fillColor: theme.colorScheme.surface,
-          ),
-          validator: (value) =>
-              value == null || value.isEmpty ? "Enter plant name" : null,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWateringFrequencySelector(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
           children: [
-            Icon(
-              Icons.water_drop_rounded,
-              color: theme.colorScheme.primary,
-              size: 24,
+            _SectionLabel(label: 'Plant Photo', icon: Icons.camera_alt_rounded),
+            const SizedBox(height: 10),
+            _ImagePicker(
+              image: _image,
+              onTap: _pickImage,
+              onClear: () => setState(() => _image = null),
             ),
-            const SizedBox(width: 8),
-            Text(
-              'Watering Schedule',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface,
-              ),
+
+            const SizedBox(height: 28),
+            _SectionLabel(label: 'Plant Name', icon: Icons.eco_rounded),
+            const SizedBox(height: 10),
+            _NameField(controller: _nameController),
+
+            const SizedBox(height: 28),
+            _SectionLabel(
+              label: 'Watering Schedule',
+              icon: Icons.water_drop_rounded,
             ),
+            const SizedBox(height: 10),
+            _ScheduleSelector(
+              selected: _wateringFrequency,
+              customTimes: _customTimes,
+              onSelect: (v) => setState(() => _wateringFrequency = v),
+              onAddTime: _addCustomTime,
+              onRemoveTime: (i) => setState(() => _customTimes.removeAt(i)),
+              formatTime: _formatTime,
+            ),
+
+            const SizedBox(height: 36),
+            _SubmitButton(onPressed: _submit),
           ],
         ),
-        const SizedBox(height: 16),
+      ),
+    );
+  }
+}
+
+// ── Section label ─────────────────────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.label, required this.icon});
+  final String label;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: theme.colorScheme.primary),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: theme.colorScheme.onSurface,
+            letterSpacing: 0.1,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Image picker ──────────────────────────────────────────────────────────────
+
+class _ImagePicker extends StatelessWidget {
+  const _ImagePicker({
+    required this.image,
+    required this.onTap,
+    required this.onClear,
+  });
+
+  final File? image;
+  final VoidCallback onTap;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: 200,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: image != null
+                ? theme.colorScheme.primary.withValues(alpha: 0.4)
+                : theme.colorScheme.outline.withValues(alpha: 0.3),
+            width: image != null ? 2 : 1.5,
+          ),
+        ),
+        child: image == null ? _emptyState(theme) : _imagePreview(theme),
+      ),
+    );
+  }
+
+  Widget _emptyState(ThemeData theme) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
+            color: theme.colorScheme.primaryContainer,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.add_a_photo_rounded,
+            size: 30,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          'Tap to add a photo',
+          style: TextStyle(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Choose from gallery',
+          style: TextStyle(
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+            fontSize: 13,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _imagePreview(ThemeData theme) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Image.file(image!, fit: BoxFit.cover),
+        ),
+        Positioned(
+          top: 10,
+          right: 10,
+          child: GestureDetector(
+            onTap: onClear,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.close_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 10,
+          right: 10,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.45),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.edit_rounded, color: Colors.white, size: 13),
+                SizedBox(width: 4),
+                Text(
+                  'Change',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Name field ────────────────────────────────────────────────────────────────
+
+class _NameField extends StatelessWidget {
+  const _NameField({required this.controller});
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return TextFormField(
+      controller: controller,
+      textCapitalization: TextCapitalization.words,
+      decoration: InputDecoration(
+        hintText: 'e.g. Monstera, Cactus…',
+        prefixIcon: Icon(
+          Icons.local_florist_rounded,
+          color: theme.colorScheme.primary,
+        ),
+        filled: true,
+        fillColor: theme.colorScheme.surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: theme.colorScheme.outline.withValues(alpha: 0.5),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: theme.colorScheme.outline.withValues(alpha: 0.5),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: theme.colorScheme.error),
+        ),
+      ),
+      validator: (v) =>
+          (v == null || v.trim().isEmpty) ? 'Enter a plant name' : null,
+    );
+  }
+}
+
+// ── Schedule selector ─────────────────────────────────────────────────────────
+
+class _ScheduleSelector extends StatelessWidget {
+  const _ScheduleSelector({
+    required this.selected,
+    required this.customTimes,
+    required this.onSelect,
+    required this.onAddTime,
+    required this.onRemoveTime,
+    required this.formatTime,
+  });
+
+  final int selected;
+  final List<TimeOfDay> customTimes;
+  final ValueChanged<int> onSelect;
+  final VoidCallback onAddTime;
+  final ValueChanged<int> onRemoveTime;
+  final String Function(TimeOfDay) formatTime;
+
+  static const _options = [
+    (value: 1, title: 'Once a day', subtitle: '12:00 PM'),
+    (value: 2, title: 'Twice a day', subtitle: '8:00 AM  ·  8:00 PM'),
+    (
+      value: 3,
+      title: 'Three times a day',
+      subtitle: '7:00 AM  ·  1:00 PM  ·  7:00 PM',
+    ),
+    (value: 4, title: 'Custom schedule', subtitle: 'Set your own times'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+              color: theme.colorScheme.outline.withValues(alpha: 0.3),
             ),
           ),
           child: Column(
             children: [
-              _buildFrequencyOption(theme, 1, 'Once a day', '12:00 PM'),
-              _buildFrequencyOption(
-                theme,
-                2,
-                'Twice a day',
-                '8:00 AM, 8:00 PM',
-              ),
-              _buildFrequencyOption(
-                theme,
-                3,
-                'Three times a day',
-                '7:00 AM, 1:00 PM, 7:00 PM',
-              ),
-              _buildFrequencyOption(
-                theme,
-                4,
-                'Custom schedule',
-                _customTimes.isEmpty
-                    ? 'Tap to add custom times'
-                    : _customTimes.map((t) => _formatTimeOfDay(t)).join(', '),
-              ),
-
-              if (_wateringFrequency == 4) ...[
-                const SizedBox(height: 20),
-                _buildCustomTimeSection(theme),
+              for (int i = 0; i < _options.length; i++) ...[
+                if (i > 0)
+                  Divider(
+                    height: 1,
+                    indent: 16,
+                    endIndent: 16,
+                    color: theme.colorScheme.outline.withValues(alpha: 0.15),
+                  ),
+                _ScheduleOption(
+                  title: _options[i].title,
+                  subtitle: _options[i].value == 4 && customTimes.isNotEmpty
+                      ? customTimes.map(formatTime).join('  ·  ')
+                      : _options[i].subtitle,
+                  value: _options[i].value,
+                  selected: selected,
+                  onTap: () => onSelect(_options[i].value),
+                ),
               ],
             ],
           ),
         ),
+
+        // Custom time section
+        if (selected == 4) ...[
+          const SizedBox(height: 12),
+          _CustomTimeSection(
+            times: customTimes,
+            onAdd: onAddTime,
+            onRemove: onRemoveTime,
+            formatTime: formatTime,
+          ),
+        ],
       ],
     );
   }
+}
 
-  Widget _buildFrequencyOption(
-    ThemeData theme,
-    int value,
-    String title,
-    String subtitle,
-  ) {
-    final isSelected = _wateringFrequency == value;
+class _ScheduleOption extends StatelessWidget {
+  const _ScheduleOption({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.selected,
+    required this.onTap,
+  });
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: isSelected
-            ? theme.colorScheme.primaryContainer
-            : theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
+  final String title;
+  final String subtitle;
+  final int value;
+  final int selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isSelected = selected == value;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
           color: isSelected
-              ? theme.colorScheme.primary
-              : theme.colorScheme.outline.withValues(alpha: 0.3),
-          width: isSelected ? 2 : 1,
+              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.5)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
         ),
-      ),
-      child: RadioListTile<int>(
-        title: Text(
-          title,
-          style: theme.textTheme.bodyLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: isSelected
-                ? theme.colorScheme.onPrimaryContainer
-                : theme.colorScheme.onSurface,
-          ),
+        child: Row(
+          children: [
+            // Custom radio indicator
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.outline.withValues(alpha: 0.5),
+                  width: isSelected ? 6 : 2,
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        subtitle: Text(
-          subtitle,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: isSelected
-                ? theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8)
-                : theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        value: value,
-        groupValue: _wateringFrequency,
-        onChanged: (newValue) {
-          setState(() {
-            _wateringFrequency = newValue!;
-          });
-        },
-        activeColor: theme.colorScheme.primary,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
     );
   }
+}
 
-  Widget _buildCustomTimeSection(ThemeData theme) {
+class _CustomTimeSection extends StatelessWidget {
+  const _CustomTimeSection({
+    required this.times,
+    required this.onAdd,
+    required this.onRemove,
+    required this.formatTime,
+  });
+
+  final List<TimeOfDay> times;
+  final VoidCallback onAdd;
+  final ValueChanged<int> onRemove;
+  final String Function(TimeOfDay) formatTime;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.25),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.3),
+          color: theme.colorScheme.primary.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -507,25 +592,24 @@ class _BuildFormState extends State<BuildForm> {
             children: [
               Icon(
                 Icons.schedule_rounded,
+                size: 16,
                 color: theme.colorScheme.primary,
-                size: 20,
               ),
               const SizedBox(width: 8),
               Text(
-                'Custom Watering Times',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+                'Custom Times',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
                   color: theme.colorScheme.onSurface,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-
-          if (_customTimes.isEmpty)
+          const SizedBox(height: 12),
+          if (times.isEmpty)
             Text(
-              'No custom times added yet. Tap the button below to add watering times.',
-              style: theme.textTheme.bodyMedium?.copyWith(
+              'No times added yet.',
+              style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             )
@@ -533,41 +617,46 @@ class _BuildFormState extends State<BuildForm> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _customTimes.asMap().entries.map((entry) {
-                final index = entry.key;
-                final time = entry.value;
+              children: times.asMap().entries.map((e) {
                 return Chip(
                   label: Text(
-                    _formatTimeOfDay(time),
+                    formatTime(e.value),
                     style: TextStyle(
                       color: theme.colorScheme.onSecondaryContainer,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
                   ),
                   deleteIcon: Icon(
                     Icons.close_rounded,
-                    size: 18,
+                    size: 16,
                     color: theme.colorScheme.onSecondaryContainer,
                   ),
-                  onDeleted: () => _removeCustomTime(index),
+                  onDeleted: () => onRemove(e.key),
                   backgroundColor: theme.colorScheme.secondaryContainer,
                   side: BorderSide.none,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
                 );
               }).toList(),
             ),
-
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
-            child: FilledButton.tonalIcon(
-              onPressed: _addCustomTime,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Add Watering Time'),
-              style: FilledButton.styleFrom(
+            child: OutlinedButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('Add Time'),
+              style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
+                side: BorderSide(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.5),
+                ),
+                foregroundColor: Theme.of(context).colorScheme.primary,
               ),
             ),
           ),
@@ -575,23 +664,30 @@ class _BuildFormState extends State<BuildForm> {
       ),
     );
   }
+}
 
-  Widget _buildSubmitButton(ThemeData theme) {
+// ── Submit button ─────────────────────────────────────────────────────────────
+
+class _SubmitButton extends StatelessWidget {
+  const _SubmitButton({required this.onPressed});
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       child: FilledButton.icon(
+        onPressed: onPressed,
         icon: const Icon(Icons.check_rounded),
         label: const Text(
-          "Save Plant",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          'Save Plant',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
-        onPressed: _submitForm,
         style: FilledButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          elevation: 2,
         ),
       ),
     );
