@@ -13,6 +13,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     with TickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  bool _isLeaving = false;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnim;
 
@@ -84,24 +85,23 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     }
   }
 
-  // ── Fix: transition goes to LoginPage, not WidgetTree ─────────────────────
+  // ── Transition to login ───────────────────────────────────────────────────
   void _navigateToLogin() {
+    // Mark as leaving so PageView stops rendering Lottie animations,
+    // freeing the raster thread for the route transition.
+    setState(() => _isLeaving = true);
+    _fadeController.stop();
+
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
         pageBuilder: (context, a, b) => const LoginPage(),
-        transitionsBuilder: (context, a, b, child) {
-          // Slide up + fade — feels like lifting a curtain
-          final slide = Tween<Offset>(
-            begin: const Offset(0, 0.06),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(parent: a, curve: Curves.easeOutCubic));
-          return FadeTransition(
-            opacity: a,
-            child: SlideTransition(position: slide, child: child),
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 450),
+        transitionsBuilder: (context, a, b, child) =>
+            FadeTransition(opacity: a, child: child),
+        // Keep it short so the heavy LoginPage gradient doesn't compete
+        // with the outgoing Lottie frame.
+        transitionDuration: const Duration(milliseconds: 300),
+        reverseTransitionDuration: const Duration(milliseconds: 200),
       ),
     );
   }
@@ -165,6 +165,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               fadeAnim: index == _currentPage
                   ? _fadeAnim
                   : const AlwaysStoppedAnimation(1.0),
+              animate: !_isLeaving,
             ),
           ),
 
@@ -211,10 +212,15 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 }
 
 class _OnboardingPage extends StatelessWidget {
-  const _OnboardingPage({required this.data, required this.fadeAnim});
+  const _OnboardingPage({
+    required this.data,
+    required this.fadeAnim,
+    required this.animate,
+  });
 
   final _OnboardingData data;
   final Animation<double> fadeAnim;
+  final bool animate;
 
   @override
   Widget build(BuildContext context) {
@@ -233,6 +239,9 @@ class _OnboardingPage extends StatelessWidget {
                 data.lottieAsset,
                 fit: BoxFit.contain,
                 repeat: true,
+                // Stop animating when we're transitioning away — frees the
+                // raster thread so the route transition is smooth.
+                animate: animate,
               ),
             ),
           ),

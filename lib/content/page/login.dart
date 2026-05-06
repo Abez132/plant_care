@@ -49,8 +49,9 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final user = await authService.value.signInWithGoogle();
       if (user != null && mounted) _goHome();
+      // user == null means the picker was cancelled — do nothing
     } catch (e) {
-      _showError('Google sign-in failed. Please try again.');
+      _showError(e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -90,9 +91,11 @@ class _LoginPageState extends State<LoginPage> {
       body: Column(
         children: [
           // ── Green hero panel ─────────────────────────────────────────
-          _HeroPanel(
-            title: 'Welcome back',
-            subtitle: 'Sign in to continue caring\nfor your plants.',
+          RepaintBoundary(
+            child: _HeroPanel(
+              title: 'Welcome back',
+              subtitle: 'Sign in to continue caring\nfor your plants.',
+            ),
           ),
 
           // ── Scrollable form ──────────────────────────────────────────
@@ -259,8 +262,9 @@ class _SignupState extends State<Signup> {
     try {
       final user = await authService.value.signInWithGoogle();
       if (user != null && mounted) _goHome();
+      // user == null means the picker was cancelled — do nothing
     } catch (e) {
-      _showError('Google sign-up failed. Please try again.');
+      _showError(e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -297,9 +301,11 @@ class _SignupState extends State<Signup> {
       backgroundColor: theme.colorScheme.surfaceContainerLowest,
       body: Column(
         children: [
-          _HeroPanel(
-            title: 'Create account',
-            subtitle: 'Join and start your\nplant care journey.',
+          RepaintBoundary(
+            child: _HeroPanel(
+              title: 'Create account',
+              subtitle: 'Join and start your\nplant care journey.',
+            ),
           ),
           Expanded(
             child: SingleChildScrollView(

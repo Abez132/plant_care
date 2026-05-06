@@ -34,25 +34,36 @@ class AuthService {
   }
 
   Future<User?> signInWithGoogle() async {
-    try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null; // User canceled the picker
+    // Sign out first so the account picker always appears (avoids silent
+    // re-use of a cached account that may belong to a different Firebase
+    // project or have a stale token).
+    await _googleSignIn.signOut();
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+    if (googleUser == null) return null; // user cancelled
 
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
+    final GoogleSignInAuthentication googleAuth =
+        await googleUser.authentication;
+
+    // Both tokens are required. If either is null the credential will be
+    // rejected by Firebase — surface a clear error instead of a silent null.
+    if (googleAuth.idToken == null) {
+      throw Exception(
+        'Google Sign-In failed: idToken is null.\n'
+        'Make sure a SHA-1 fingerprint is registered in the Firebase console '
+        'for package "com.example.plant_care" and that the google-services.json '
+        'has been re-downloaded after adding it.',
       );
-
-      final UserCredential userCredential = await firebaseAuth
-          .signInWithCredential(credential);
-      return userCredential.user;
-    } catch (e) {
-      debugPrint("Error during Google Sign-In: $e");
-      return null;
     }
+
+    final credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    final UserCredential userCredential = await firebaseAuth
+        .signInWithCredential(credential);
+    return userCredential.user;
   }
 
   Future<void> signOut() async {
