@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:plant_care/content/widgetree.dart';
+import 'package:plant_care/content/page/login.dart';
 import 'package:lottie/lottie.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -80,18 +80,28 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         curve: Curves.easeInOutCubic,
       );
     } else {
-      _navigateToHome();
+      _navigateToLogin();
     }
   }
 
-  void _navigateToHome() {
+  // ── Fix: transition goes to LoginPage, not WidgetTree ─────────────────────
+  void _navigateToLogin() {
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (context, a, b) => const WidgetTree(),
-        transitionsBuilder: (context, a, b, child) =>
-            FadeTransition(opacity: a, child: child),
-        transitionDuration: const Duration(milliseconds: 500),
+        pageBuilder: (context, a, b) => const LoginPage(),
+        transitionsBuilder: (context, a, b, child) {
+          // Slide up + fade — feels like lifting a curtain
+          final slide = Tween<Offset>(
+            begin: const Offset(0, 0.06),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(parent: a, curve: Curves.easeOutCubic));
+          return FadeTransition(
+            opacity: a,
+            child: SlideTransition(position: slide, child: child),
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 450),
       ),
     );
   }
@@ -166,7 +176,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               child: Padding(
                 padding: const EdgeInsets.only(right: 20, top: 8),
                 child: TextButton(
-                  onPressed: _navigateToHome,
+                  onPressed: _navigateToLogin,
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.white.withValues(alpha: 0.7),
                     padding: const EdgeInsets.symmetric(
@@ -310,7 +320,6 @@ class _BottomPanel extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Pill indicator
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(pages.length, (i) {
@@ -332,7 +341,6 @@ class _BottomPanel extends StatelessWidget {
             const SizedBox(height: 28),
             Row(
               children: [
-                // Page counter
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,7 +366,6 @@ class _BottomPanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 16),
-                // Next button
                 GestureDetector(
                   onTap: onNext,
                   child: AnimatedContainer(
